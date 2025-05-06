@@ -1,0 +1,113 @@
+/* Обертка всех колонок */
+#values-column {
+  display: flex;
+  gap: 10px;
+  background-color: #2b2b2b; /* темно-серый фон страницы */
+  padding: 20px;
+  color: white; /* текст по умолчанию белый */
+}
+
+/* Общий стиль для всех столбцов внутри values-column */
+.params-column,
+.subcategory-column,
+.subcategory-params-column,
+.subcategory-values-column {
+  background-color: #00ffff; /* аквамариновый фон колонок */
+  border: 1px solid #ddd;
+  padding: 10px;
+  min-width: 200px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  border-radius: 6px;
+  color: white; /* белый текст внутри */
+}
+
+/* Элементы внутри столбцов */
+.value-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 5px;
+  background: white; /* белый фон столбца */
+  color: #2b2b2b; /* темный текст внутри элементов */
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+/* Наведение на элемент */
+.value-item:hover {
+  background: #eef1f5;
+}
+
+/* Чекбокс/активация */
+.select-box {
+  width: 16px;
+  height: 16px;
+  background-color: #ccc;
+  border-radius: 3px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+/* Активное состояние чекбокса */
+.select-box.active {
+  background-color: #4caf50;
+}
+
+
+/*!* Обертка всех колонок *!*/
+/*#values-column {*/
+/*  display: flex;*/
+/*  gap: 10px; !* расстояние между столбцами *!*/
+/*}*/
+
+/*!* Общий стиль для всех столбцов внутри values-column *!*/
+/*.params-column,*/
+/*.subcategory-column,*/
+/*.subcategory-params-column,*/
+/*.subcategory-values-column {*/
+/*  background-color: #f9f9f9;*/
+/*  border: 1px solid #ddd;*/
+/*  padding: 10px;*/
+/*  min-width: 200px; !* минимальная ширина столбца *!*/
+/*  max-height: 80vh; !* ограничение по высоте, чтобы прокручивались если много данных *!*/
+/*  overflow-y: auto; !* вертикальная прокрутка при переполнении *!*/
+/*  box-sizing: border-box;*/
+/*  border-radius: 6px; !* скругление углов *!*/
+/*}*/
+
+/*!* Элементы внутри столбцов *!*/
+/*.value-item {*/
+/*  display: flex;*/
+/*  justify-content: space-between;*/
+/*  align-items: center;*/
+/*  margin-bottom: 8px;*/
+/*  padding: 5px;*/
+/*  background: white;*/
+/*  border-radius: 4px;*/
+/*  cursor: pointer;*/
+/*  transition: background 0.2s;*/
+/*}*/
+
+/*!* Наведение на элемент *!*/
+/*.value-item:hover {*/
+/*  background: #eef1f5;*/
+/*}*/
+
+/*!* Чекбокс/активация *!*/
+/*.select-box {*/
+/*  width: 16px;*/
+/*  height: 16px;*/
+/*  background-color: #ccc;*/
+/*  border-radius: 3px;*/
+/*  margin-left: 8px;*/
+/*  flex-shrink: 0;*/
+/*}*/
+
+/*!* Активное состояние чекбокса *!*/
+/*.select-box.active {*/
+/*  background-color: #4caf50;*/
+/*}*/

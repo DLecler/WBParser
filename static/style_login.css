@@ -1,0 +1,64 @@
+body {
+    background: linear-gradient(to right, #170f0a 0%, #23140f 30%, #3d2a22 60%, #82675b 100%);
+    color: white;
+    font-family: 'Arial Black', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* Заголовок */
+h2 {
+    margin-bottom: 20px;
+}
+
+/* Стиль формы */
+form {
+    background-color: #3d2a22; /* аквамариновый фон формы */
+    padding: 20px 30px;
+    border-radius: 10px;
+    border: 2px solid #a5907e; /* тонкая рамка вокруг формы */
+    box-shadow: 0 0 15px 4px #a5907e;
+}
+
+/* Метки и поля */
+label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+/* Поля ввода */
+input[type="text"],
+input[type="password"] {
+    color: white;
+    background-color: #a5907e;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-family: 'Arial Black', sans-serif;
+}
+
+/* Кнопка */
+button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: #82675b; /* белый фон кнопки */
+    color: white; /* темный текст */
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-family: 'Bahnschrift', sans-serif;
+}
+
+button[type="submit"]:hover {
+    background-color: #70584d;
+}

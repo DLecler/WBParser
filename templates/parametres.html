@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Параметры</title>
+
+  <link rel="stylesheet" href="/static/style_parametres.css">
+  <style>
+    /*body {*/
+    /*  font-family: sans-serif;*/
+    /*  margin: 20px;*/
+    /*}*/
+    /*.menu {*/
+    /*  display: flex;*/
+    /*  position: relative;*/
+    /*  width: fit-content;*/
+    /*}*/
+    /*.menu-column {*/
+    /*  background: #f9f9f9;*/
+    /*  border: 1px solid #ccc;*/
+    /*  margin-right: 10px;*/
+    /*  box-shadow: 2px 2px 8px rgba(0,0,0,0.1);*/
+    /*  min-width: fit-content;*/
+    /*  white-space: nowrap;*/
+    /*}*/
+    /*.menu-item, .value-item {*/
+    /*  padding: 10px;*/
+    /*  border-bottom: 1px solid #eee;*/
+    /*  cursor: pointer;*/
+    /*  background: white;*/
+    /*}*/
+    /*.menu-item:hover, .value-item:hover {*/
+    /*  background: #eef;*/
+    /*}*/
+    /*.value-item {*/
+    /*  display: flex;*/
+    /*  justify-content: space-between;*/
+    /*  align-items: center;*/
+    /*}*/
+    /*.select-box {*/
+    /*  width: 14px;*/
+    /*  height: 14px;*/
+    /*  border-radius: 3px;*/
+    /*  border: 2px solid #555;*/
+    /*  margin-left: 8px;*/
+    /*  cursor: pointer;*/
+    /*  transition: background-color 0.2s ease;*/
+    /*}*/
+    /*.select-box.active {*/
+    /*  background-color: green;*/
+    /*}*/
+    /*.scrollable {*/
+    /*  max-height: 340px;*/
+    /*  overflow-y: auto;*/
+    /*}*/
+    /*#next-button {*/
+    /*  position: fixed;*/
+    /*  bottom: 20px;*/
+    /*  right: 20px;*/
+    /*  background-color: #4CAF50;*/
+    /*  color: white;*/
+    /*  border: none;*/
+    /*  border-radius: 4px;*/
+    /*  padding: 10px 20px;*/
+    /*  font-size: 16px;*/
+    /*  cursor: pointer;*/
+    /*  box-shadow: 0 4px 6px rgba(0,0,0,0.1);*/
+    /*}*/
+    /*#next-button:hover {*/
+    /*  background-color: #388e3c;*/
+    /*}*/
+
+    /*#back-button {*/
+    /*  position: fixed;*/
+    /*  bottom: 20px;*/
+    /*  left: 20px;*/
+    /*  background-color: #f44336;*/
+    /*  color: white;*/
+    /*  border: none;*/
+    /*  border-radius: 4px;*/
+    /*  padding: 10px 20px;*/
+    /*  font-size: 16px;*/
+    /*  cursor: pointer;*/
+    /*  box-shadow: 0 4px 6px rgba(0,0,0,0.1);*/
+    /*}*/
+    /*#back-button:hover {*/
+    /*  background-color: #d32f2f;*/
+    /*}*/
+    /*.price-input-container {*/
+    /*  display: flex;*/
+    /*  align-items: center;*/
+    /*  padding: 10px;*/
+    /*  gap: 10px;*/
+    /*}*/
+    /*.price-input {*/
+    /*  width: 80px;*/
+    /*  padding: 4px;*/
+    /*  font-size: 14px;*/
+    /*}*/
+
+    /*.category-container {*/
+    /*  display: flex;*/
+    /*}*/
+    /*.params-column,*/
+    /*.subcategory-column,*/
+    /*.subcategory-params-column,*/
+    /*.subcategory-values-column {*/
+    /*  border-left: 1px solid #ddd;*/
+    /*  padding: 10px;*/
+    /*  min-width: 160px;*/
+    /*}*/
+  </style>
+</head>
+<body>
+  <h2>Параметры</h2>
+  <div id="gradient-bg-wrapper"></div>
+  <div class="menu" id="menu-container">
+    <div class="menu-column scrollable" id="left-column"></div>
+    <div class="menu-column scrollable" id="right-column" style="display: none;"></div>
+    <div class="menu-column scrollable" id="values-column" style="display: none;"></div>
+
+    <div class="menu-column scrollable" id="subcategory-column" style="display: none;"></div>
+    <div class="menu-column scrollable" id="subcategory-params-column" style="display: none;"></div>
+    <div class="menu-column scrollable" id="subcategory-values-column" style="display: none;"></div>
+  </div>
+
+  <button id="back-button">ВЕРНУТЬСЯ НАЗАД</button>
+  <button id="next-button">ДАЛЕЕ</button>
+
+  <script>
+    const categoryItems = {{ category_items | tojson | safe }};
+    const leftColumn = document.getElementById("left-column");
+    const rightColumn = document.getElementById("right-column");
+    const valuesColumn = document.getElementById("values-column");
+    const menuContainer = document.getElementById("menu-container");
+
+    const subcategoryColumn = document.getElementById("subcategory-column");
+    const subcategoryParamsColumn = document.getElementById("subcategory-params-column");
+    const subcategoryValuesColumn = document.getElementById("subcategory-values-column");
+
+    // Очистка при загрузке страницы
+    window.addEventListener('load', () => {
+      localStorage.removeItem('activeCheckboxes'); // Удаляем старые данные
+      localStorage.removeItem('priceInputsState'); // Удаляем старые данные
+    });
+    // Инициализация Map (после очистки!)
+    const activeCheckboxes = new Map(JSON.parse(localStorage.getItem('activeCheckboxes') || '[]'));
+
+
+    const toggleNames = [
+      "Распродажа", "Можно вернуть НДС", "С рейтингом от 4,7",
+      "Оригинальный товар", "Премиум-продавец", "Рубли за отзыв", "Скидки WB Клуба"
+    ];
+
+    const mainCategories = new Map();
+    const activeSubCategories = new Map();
+    // const activeCheckboxes = new Map();
+    const priceInputsState = new Map();
+
+
+
+    function renderLeftMenu() {
+
+      rightColumn.style.display = "none";
+      valuesColumn.style.display = "none";
+      subcategoryColumn.style.display = "none";
+      subcategoryParamsColumn.style.display = "none";
+      subcategoryValuesColumn.style.display = "none";
+
+      rightColumn.innerHTML = "";
+      valuesColumn.innerHTML = "";
+      subcategoryColumn.innerHTML = "";
+      subcategoryParamsColumn.innerHTML = "";
+      subcategoryValuesColumn.innerHTML = "";
+
+      categoryItems.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "menu-item";
+        div.textContent = item.name;
+        div.addEventListener("mouseenter", () => {
+          renderRightMenu(item);
+          rightColumn.style.display = "block";
+        });
+        // mainCategories.set(item.name, item.id)
+        mainCategories.set(item.id, item.name)
+        leftColumn.appendChild(div);
+      });
+    }
+
+    function renderRightMenu(item) {
+
+      valuesColumn.style.display = "none";
+      subcategoryColumn.style.display = "none";
+      subcategoryParamsColumn.style.display = "none";
+      subcategoryValuesColumn.style.display = "none";
+
+      valuesColumn.innerHTML = "";
+      subcategoryColumn.innerHTML = "";
+      subcategoryParamsColumn.innerHTML = "";
+      subcategoryValuesColumn.innerHTML = "";
+
+      const parameters = item.parameters
+      console.log("Параметры категории", item.name, item.parameters);
+
+      rightColumn.innerHTML = "";
+      valuesColumn.innerHTML = "";
+      valuesColumn.style.display = "none";
+
+      parameters.forEach(param => {
+        const div = document.createElement("div");
+        div.className = "value-item";
+
+        const span = document.createElement("span");
+        span.textContent = param.name;
+        div.appendChild(span);
+
+        if (toggleNames.includes(param.name)) {
+          const box = document.createElement("div");
+          box.className = "select-box";
+
+          // const paramKey = `price_${item.id}_${param.id}`;
+          // const paramKey = `prod_${item.id}_param_${param.id}`;
+          const paramKey = `prod=${item.id}&${param.id}=1`;
+          if (activeCheckboxes.get(paramKey)) {
+              box.classList.add("active");
+          }
+
+          box.addEventListener("click", (e) => {
+            e.stopPropagation();
+            box.classList.toggle("active");
+            activeCheckboxes.set(paramKey, box.classList.contains("active"));
+            localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+          });
+          div.appendChild(box);
+        }
+
+
+        rightColumn.appendChild(div);
+
+        div.addEventListener("mouseenter", async () => {
+          const isCategory = param.name === "Категория";
+          const values = param.categories || param.items || param.values || [];
+
+          // valuesColumn.style.display = "none";
+          // subcategoryColumn.style.display = "none";
+          // subcategoryParamsColumn.style.display = "none";
+          // subcategoryValuesColumn.style.display = "none";
+
+          valuesColumn.innerHTML = "";
+          subcategoryColumn.innerHTML = "";
+          subcategoryParamsColumn.innerHTML = "";
+          subcategoryValuesColumn.innerHTML = "";
+
+          valuesColumn.innerHTML = "";
+
+          if (toggleNames.includes(param.name)) {
+            valuesColumn.style.display = "none";
+            return;
+          }
+
+          if (param.name === "Цена") {
+            // Формируем уникальный ключ для хранения состояния
+            // const priceKey = `prod_${item.id}_priceU`;
+            const priceKey = `prod=${item.id}&priceU=`;
+
+            // Получаем сохранённые значения или создаём пустой объект
+            const currentPrice = priceInputsState.get(priceKey) || {
+                min: param.minPriceU ?? 0,  // Защита от undefined
+                max: param.maxPriceU ?? 1000000
+            };
+
+            // Создаем контейнер для полей ввода
+            valuesColumn.style.display = "block";
+            const container = document.createElement("div");
+            container.className = "price-input-container";
+
+            // Поле "От"
+            const labelFrom = document.createElement("span");
+            labelFrom.textContent = "ОТ";
+
+            const minInput = document.createElement("input");
+            minInput.type = "number";
+            minInput.className = "price-input";
+            minInput.placeholder = "Минимум";
+            minInput.value = currentPrice.min;  // Восстанавливаем значение
+
+            // Поле "До"
+            const labelTo = document.createElement("span");
+            labelTo.textContent = "ДО";
+
+            const maxInput = document.createElement("input");
+            maxInput.type = "number";
+            maxInput.className = "price-input";
+            maxInput.placeholder = "Максимум";
+            maxInput.value = currentPrice.max;  // Восстанавливаем значение
+
+            // Обработчики изменений
+            minInput.addEventListener("input", (e) => {
+                priceInputsState.set(priceKey, {
+                    min: e.target.value,
+                    max: maxInput.value
+                });
+                // Сохраняем актуальные значения
+                localStorage.setItem('priceInputsState', JSON.stringify([...priceInputsState]));
+            });
+
+            maxInput.addEventListener("input", (e) => {
+                priceInputsState.set(priceKey, {
+                    min: minInput.value,
+                    max: e.target.value
+                });
+                // Сохраняем актуальные значения
+                localStorage.setItem('priceInputsState', JSON.stringify([...priceInputsState]));
+            });
+
+            // Добавляем элементы в DOM
+            container.append(labelFrom, minInput, labelTo, maxInput);
+            valuesColumn.appendChild(container);
+
+            return;
+          }
+
+          if (param.name === "Срок доставки") {
+            valuesColumn.style.display = "block";
+            valuesColumn.innerHTML = ""; // Очищаем предыдущие элементы
+
+            const deliveryOptions = ["Любой", "2-4 часа", "Сегодня", "Завтра", "Послезавтра", "До 3 дней", "До 5 дней"];
+
+            deliveryOptions.forEach(option => {
+                const row = document.createElement("div");
+                row.className = "value-item";
+
+                const label = document.createElement("span");
+                label.textContent = option;
+
+                const box = document.createElement("div");
+                box.className = "select-box";
+
+                // Формируем уникальный ключ
+                // const valueKey = `prod_${item.id}_param_fdlvr_${option}`;
+                const valueKey = `prod=${item.id}&param=fdlvr&value=${option}`;
+
+                // Восстанавливаем состояние
+                if (activeCheckboxes.get(valueKey)) {
+                    box.classList.add("active");
+                }
+
+                box.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    box.classList.toggle("active");
+
+                    // Сохраняем состояние
+                    activeCheckboxes.set(valueKey, box.classList.contains("active"));
+                    localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+                });
+
+                row.append(label, box);
+                valuesColumn.appendChild(row);
+            });
+            return;
+          }
+
+          window.addEventListener("load", () => {
+            activeCheckboxes.clear();
+            priceInputsState.clear();
+            localStorage.removeItem("activeCheckboxes");
+          });
+
+          if (isCategory) {
+            valuesColumn.style.display = "none";
+            subcategoryColumn.innerHTML = "";
+            subcategoryParamsColumn.innerHTML = "";
+            subcategoryValuesColumn.innerHTML = "";
+            subcategoryColumn.style.display = "block";
+            subcategoryParamsColumn.style.display = "none";
+            subcategoryValuesColumn.style.display = "none";
+
+            const subParams = param.sub_parameters || [];
+
+            subParams.forEach((sub) => {
+                const scn = sub.sub_category_name;
+                const subDiv = document.createElement("div");
+                subDiv.className = "value-item";
+                const label = document.createElement("span");
+                label.textContent = scn;
+                const box = document.createElement("div");
+                box.className = "select-box";
+                box.dataset.subcategory = scn;
+                const categorKey = `prod=${item.id}&xsubname=${scn}&xsubject=${sub.sub_category_id}`;
+
+                if (activeSubCategories.get(categorKey)) {
+                    box.classList.add("active");
+                    showSubcategoryParams(sub);
+                }
+
+                box.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    box.classList.toggle("active");
+                    const isActive = box.classList.contains("active");
+                    activeSubCategories.set(categorKey, isActive);
+                    activeCheckboxes.set(categorKey, isActive);
+                    localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+
+                    if (isActive) {
+                        showSubcategoryParams(sub);
+                    } else {
+                        subcategoryParamsColumn.style.display = "none";
+                        subcategoryValuesColumn.style.display = "none";
+                        subcategoryParamsColumn.innerHTML = "";
+                        subcategoryValuesColumn.innerHTML = "";
+                    }
+                });
+
+                subDiv.appendChild(label);
+                subDiv.appendChild(box);
+                subcategoryColumn.appendChild(subDiv);
+            });
+
+            function showSubcategoryParams(sub) {
+                subcategoryParamsColumn.innerHTML = "";
+                subcategoryValuesColumn.innerHTML = "";
+                subcategoryParamsColumn.style.display = "block";
+                subcategoryValuesColumn.style.display = "none";
+
+                const subParamsData = sub.parameters || [];
+
+                subParamsData.forEach((paramItem) => {
+                    const paramDiv = document.createElement("div");
+                    paramDiv.className = "value-item";
+
+                    const paramLabel = document.createElement("span");
+                    paramLabel.textContent = paramItem.name;
+                    paramDiv.appendChild(paramLabel);
+
+                    if (toggleNames.includes(paramItem.name)) {
+                        const box = document.createElement("div");
+                        box.className = "select-box";
+
+                        // const paramKey = `param_${item.id}_${param.category_id}_${sub.sub_category_id}_${paramItem.id}`;
+                        // const paramKey = `prod_${item.id}_xsubject_${sub.sub_category_id}_param_${paramItem.id}`;
+                        const paramKey = `prod=${item.id}&xsubject=${sub.sub_category_id}&${paramItem.id}=1`;
+                        if (activeCheckboxes.get(paramKey)) {
+                            box.classList.add("active");
+                        }
+
+                        box.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            box.classList.toggle("active");
+                            activeCheckboxes.set(paramKey, box.classList.contains("active"));
+                            localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+                        });
+
+                        paramDiv.appendChild(box);
+                    }
+
+                    paramDiv.addEventListener("mouseenter", () => {
+                        subcategoryValuesColumn.innerHTML = "";
+
+                        if (toggleNames.includes(paramItem.name)) {
+                            subcategoryValuesColumn.style.display = "block";
+                            return;
+                        }
+
+                        if (paramItem.name === "Цена") {
+                            // const priceKey = `price_${item.id}_${paramItem.id}_${sub.sub_category_id}`;
+                            // const priceKey = `prod_${item.id}_xsubject_${sub.sub_category_id}_priceU`;
+                            const priceKey = `prod=${item.id}&xsubject=${sub.sub_category_id}&priceU=`;
+                            const currentPrice = priceInputsState.get(priceKey) || {
+                                min: paramItem.minPriceU,
+                                max: paramItem.maxPriceU
+                            };
+
+                            subcategoryValuesColumn.style.display = "block";
+                            const container = document.createElement("div");
+                            container.className = "price-input-container";
+
+                            const labelFrom = document.createElement("span");
+                            labelFrom.textContent = "ОТ";
+
+                            const minInput = document.createElement("input");
+                            minInput.type = "number";
+                            minInput.className = "price-input";
+                            minInput.placeholder = "Минимум";
+                            minInput.value = currentPrice.min;
+
+                            const labelTo = document.createElement("span");
+                            labelTo.textContent = "ДО";
+
+                            const maxInput = document.createElement("input");
+                            maxInput.type = "number";
+                            maxInput.className = "price-input";
+                            maxInput.placeholder = "Максимум";
+                            maxInput.value = currentPrice.max;
+
+                            minInput.addEventListener("input", (e) => {
+                                priceInputsState.set(priceKey, {
+                                    min: e.target.value,
+                                    max: maxInput.value
+                                });
+                                localStorage.setItem('priceInputsState', JSON.stringify([...priceInputsState]));
+                            });
+
+                            maxInput.addEventListener("input", (e) => {
+                                priceInputsState.set(priceKey, {
+                                    min: minInput.value,
+                                    max: e.target.value
+                                });
+                                localStorage.setItem('priceInputsState', JSON.stringify([...priceInputsState]));
+                            });
+
+                            container.append(labelFrom, minInput, labelTo, maxInput);
+                            subcategoryValuesColumn.appendChild(container);
+                            return;
+                        }
+
+                        if (paramItem.name === "Срок доставки") {
+                            subcategoryValuesColumn.style.display = "block";
+                            subcategoryValuesColumn.innerHTML = "";
+
+                            const deliveryOptions = ["Любой", "2-4 часа", "Сегодня", "Завтра", "Послезавтра", "До 3 дней", "До 5 дней"];
+
+                            deliveryOptions.forEach(option => {
+                                const row = document.createElement("div");
+                                row.className = "value-item";
+
+                                const label = document.createElement("span");
+                                label.textContent = option;
+
+                                const box = document.createElement("div");
+                                box.className = "select-box";
+
+                                // const valueKey = `prod_${item.id}_xsubject_${sub.sub_category_id}_fdlvr_${option}`;
+                                // const valueKey = `prod_${item.id}_param_fdlvr_${option}`;
+                                const valueKey = `prod=${item.id}&xsubject=${sub.sub_category_id}&param=fdlvr&value=${option}`;
+
+                                if (activeCheckboxes.get(valueKey)) {
+                                    box.classList.add("active");
+                                }
+
+                                box.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    box.classList.toggle("active");
+                                    activeCheckboxes.set(valueKey, box.classList.contains("active"));
+                                    localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+                                });
+
+                                row.append(label, box);
+                                subcategoryValuesColumn.appendChild(row);
+                            });
+                            return;
+                        }
+
+                        const values = paramItem.values || [];
+                        subcategoryValuesColumn.innerHTML = "";
+
+                        if (values.length > 0) {
+                            subcategoryValuesColumn.style.display = "block";
+
+                            values.forEach((value) => {
+                                const valueDiv = document.createElement("div");
+                                valueDiv.className = "value-item";
+
+                                const valueLabel = document.createElement("span");
+                                valueLabel.textContent = value.name || value;
+
+                                const valueBox = document.createElement("div");
+                                valueBox.className = "select-box";
+
+                                const SubcatID = sub.sub_category_id;
+                                // const valueKey = `prod_${item.id}_xsubject_${SubcatID}_param_${paramItem.id}_value_${value.id}`;
+                                const valueKey = `prod=${item.id}&xsubject=${SubcatID}&param=${paramItem.id}&value=${value.id}`;
+
+                                if (activeCheckboxes.get(valueKey)) {
+                                    valueBox.classList.add("active");
+                                }
+
+                                valueBox.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    valueBox.classList.toggle("active");
+                                    activeCheckboxes.set(valueKey, valueBox.classList.contains("active"));
+                                    localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+                                });
+
+                                valueDiv.appendChild(valueLabel);
+                                valueDiv.appendChild(valueBox);
+                                subcategoryValuesColumn.appendChild(valueDiv);
+                            });
+                        } else {
+                            subcategoryValuesColumn.style.display = "none";
+                        }
+                    });
+
+                    subcategoryParamsColumn.appendChild(paramDiv);
+                });
+            }
+
+            return;
+        }
+
+          if (values.length > 0) {
+            valuesColumn.style.display = "block";
+            valuesColumn.innerHTML = ""; // Очищаем предыдущие элементы
+
+            values.forEach(value => {
+              const row = document.createElement("div");
+              row.className = "value-item";
+
+              // Поддержка строк и объектов
+              const name = typeof value === 'string' ? value : value.name || value;
+              const valueId = typeof value === 'object' && value.id !== undefined ? value.id : name;
+
+              const label = document.createElement("span");
+              label.textContent = name;
+
+              const box = document.createElement("div");
+              box.className = "select-box";
+              box.dataset.category = name;
+
+              // Исправлено: уникальный ключ должен зависеть от конкретного value
+              // const uniqueKey = `prod_${item.id}_param_${param.id}_value_${valueId}`;
+              const uniqueKey = `prod=${item.id}&param=${param.id}&value=${valueId}`;
+
+              // Восстанавливаем состояние
+              if (activeCheckboxes.get(uniqueKey)) {
+                  box.classList.add("active");
+              }
+
+              box.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  box.classList.toggle("active");
+
+                  // Сохраняем состояние
+                  activeCheckboxes.set(uniqueKey, box.classList.contains("active"));
+                  localStorage.setItem('activeCheckboxes', JSON.stringify([...activeCheckboxes]));
+              });
+
+              row.append(label, box);
+              valuesColumn.appendChild(row);
+            });
+          } else {
+            valuesColumn.style.display = "none";
+          }
+        });
+      });
+    }
+
+    menuContainer.addEventListener("mouseleave", () => {
+      rightColumn.style.display = "none";
+      valuesColumn.style.display = "none";
+    });
+
+    window.addEventListener('load', () => {
+      localStorage.removeItem('activeCheckboxes');  // Удаляем старые данные
+      activeCheckboxes.clear();                     // Также очищаем текущую Map
+      renderLeftMenu();                             // Рисуем меню
+    });
+
+
+
+    document.getElementById("next-button").addEventListener("click", async (event) => {
+      event.preventDefault(); // Отключаем стандартную отправку формы
+
+      const storedCheckboxes = localStorage.getItem("activeCheckboxes");
+      let activeKeys = [];
+
+      if (storedCheckboxes) {
+          try {
+              const parsed = JSON.parse(storedCheckboxes);
+              activeKeys = parsed
+                  .filter(([_, value]) => value === true)
+                  .map(([key, _]) => key);
+          } catch (e) {
+              console.error("Ошибка при чтении чекбоксов из localStorage:", e);
+          }
+      }
+
+      // 2. Читаем сохранённые значения цен
+      const priceInputsStateObject = {};
+      const storedPrices = localStorage.getItem("priceInputsState");
+
+      if (storedPrices) {
+          try {
+              const parsedPrices = JSON.parse(storedPrices);
+              for (const [key, value] of parsedPrices) {
+                  // if (key.endsWith("_priceU")) {
+                  if (key.endsWith("priceU=")) {
+                      priceInputsStateObject[key] = value;
+                  }
+              }
+          } catch (e) {
+              console.error("Ошибка при чтении цен из localStorage:", e);
+          }
+      }
+
+      try {
+          const response = await fetch("/parametres", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                  activeKeys: activeKeys,
+                  prices: priceInputsStateObject
+              })
+          });
+
+          if (!response.ok) {
+              throw new Error("Ошибка при отправке запроса");
+          }
+
+      } catch (error) {
+          console.error("Ошибка:", error);
+          alert("Не удалось отправить параметры.");
+      }
+    });
+
+  </script>
+</body>
+</html>

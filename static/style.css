@@ -1,0 +1,53 @@
+/*:root {*/
+/*    --dynamic-font-size: 14px;*/
+/*    --dynamic-item-height: 34px;*/
+/*}*/
+
+/*body {*/
+/*    font-family: sans-serif;*/
+/*    margin: 20px;*/
+/*    overflow: hidden;*/
+/*}*/
+
+/*h2 {*/
+/*    margin-bottom: 16px;*/
+/*}*/
+
+/*#menu-container {*/
+/*    position: relative;*/
+/*    height: calc(100vh - 80px); !* 100vh за вычетом заголовка и отступов *!*/
+/*    display: flex;*/
+/*    overflow: hidden;*/
+/*}*/
+
+/*.menu {*/
+/*    width: 220px;*/
+/*    background: #f9f9f9;*/
+/*    border: 1px solid #ccc;*/
+/*    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);*/
+/*    font-size: var(--dynamic-font-size);*/
+/*    overflow-y: hidden;*/
+/*}*/
+
+/*.menu-item {*/
+/*    padding: 8px 12px;*/
+/*    height: var(--dynamic-item-height);*/
+/*    box-sizing: border-box;*/
+/*    border-bottom: 1px solid #e0e0e0;*/
+/*    cursor: pointer;*/
+/*    white-space: nowrap;*/
+/*    background: white;*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*}*/
+
+/*.menu-item:hover {*/
+/*    background: #eef;*/
+/*}*/
+
+/*.menu {*/
+/*    position: relative;*/
+/*    top: 0;*/
+/*    left: 0;*/
+/*    margin-top: 10px;*/
+/*}*/

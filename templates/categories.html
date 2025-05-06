@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/style_categories.css">
+    <title>Категории</title>
+<!--    <style>-->
+<!--        body {-->
+<!--            font-family: sans-serif;-->
+<!--            margin: 20px;-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        h2 {-->
+<!--            margin-bottom: 16px;-->
+<!--        }-->
+
+<!--        .menu {-->
+<!--            position: absolute;-->
+<!--            background: #f9f9f9;-->
+<!--            border: 1px solid #ccc;-->
+<!--            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);-->
+<!--            font-size: var(&#45;&#45;dynamic-font-size, 14px);-->
+<!--            overflow-y: hidden;-->
+<!--        }-->
+
+<!--        .menu-item {-->
+<!--            padding: 8px 12px;-->
+<!--            height: var(&#45;&#45;dynamic-item-height, 34px);-->
+<!--            box-sizing: border-box;-->
+<!--            border-bottom: 1px solid #e0e0e0;-->
+<!--            cursor: pointer;-->
+<!--            white-space: nowrap;-->
+<!--            background: white;-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            justify-content: space-between;-->
+<!--        }-->
+
+<!--        .menu-item:hover {-->
+<!--            background: #eef;-->
+<!--        }-->
+
+<!--        .select-box {-->
+<!--            width: 16px;-->
+<!--            height: 16px;-->
+<!--            margin-left: 10px;-->
+<!--            border: 1px solid #444;-->
+<!--            border-radius: 4px;-->
+<!--            background-color: red;-->
+<!--            cursor: pointer;-->
+<!--            flex-shrink: 0;-->
+<!--            transition: background-color 0.2s ease, border-color 0.2s ease;-->
+<!--        }-->
+
+<!--        .select-box.selected {-->
+<!--            background-color: green;-->
+<!--        }-->
+
+<!--        #continue-button {-->
+<!--            position: fixed;-->
+<!--            bottom: 20px;-->
+<!--            right: 20px;-->
+<!--            background-color: #4CAF50;-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            border-radius: 4px;-->
+<!--            padding: 10px 20px;-->
+<!--            font-size: 16px;-->
+<!--            cursor: pointer;-->
+<!--            box-shadow: 0 4px 6px rgba(0,0,0,0.1);-->
+<!--            transition: background-color 0.2s ease;-->
+<!--            z-index: 999;-->
+<!--        }-->
+
+<!--        #continue-button:hover {-->
+<!--            background-color: #45a049;-->
+<!--        }-->
+<!--    </style>-->
+</head>
+<body>
+    <h2>Выбор категории</h2>
+    <div id="menu-container" style="position: relative; height: calc(100vh - 80px);"></div>
+    <button id="continue-button">Продолжить</button>
+
+    <script>
+        const categories = {{ categories | tojson }};
+        const container = document.getElementById("menu-container");
+        const verticalPadding = 20;
+        let itemHeight = 34;
+        let fontSize = 14;
+
+        const selectedIds = new Set();
+
+        function adjustFontSizeForFirstMenu(items) {
+            const maxHeight = window.innerHeight - 100;
+            let size = 16;
+            let spacing = 0;
+
+            while (size > 10) {
+                spacing = size * 2.2;
+                if (items.length * spacing < maxHeight - verticalPadding) break;
+                size--;
+            }
+
+            fontSize = size;
+            itemHeight = spacing;
+
+            document.documentElement.style.setProperty('--dynamic-font-size', `${fontSize}px`);
+            document.documentElement.style.setProperty('--dynamic-item-height', `${itemHeight}px`);
+        }
+
+        adjustFontSizeForFirstMenu(categories);
+
+        function findItemById(items, id) {
+            for (const item of items) {
+                if (item.id == id) return item;
+                if (item.childs) {
+                    const found = findItemById(item.childs, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function resetChildrenState(item) {
+            if (item.childs) {
+                item.childs.forEach(child => {
+                    sessionStorage.setItem(`item-${child.id}`, 'red');
+                    selectedIds.delete(child.id);
+                    const box = document.querySelector(`.select-box[data-id='${child.id}']`);
+                    if (box) box.classList.remove("selected");
+                    resetChildrenState(child);
+                });
+            }
+        }
+
+        function areAllChildrenSelected(item) {
+            if (!item.childs || item.childs.length === 0) return false;
+            return item.childs.every(child => sessionStorage.getItem(`item-${child.id}`) === 'green');
+        }
+
+        function updateParentStatesRecursively(item) {
+            if (!item.parent_id) return;
+
+            const parentItem = findItemById(categories, item.parent_id);
+            if (!parentItem) return;
+
+            const parentBox = document.querySelector(`.select-box[data-id='${parentItem.id}']`);
+
+            if (areAllChildrenSelected(parentItem)) {
+                if (parentBox) parentBox.classList.add('selected');
+                sessionStorage.setItem(`item-${parentItem.id}`, 'green');
+                selectedIds.add(parentItem.id);
+                resetChildrenState(parentItem);
+            } else {
+                if (parentBox) parentBox.classList.remove('selected');
+                sessionStorage.setItem(`item-${parentItem.id}`, 'red');
+                selectedIds.delete(parentItem.id);
+            }
+
+            updateParentStatesRecursively(parentItem);
+        }
+
+        function initializeColors(items) {
+            items.forEach(item => {
+                const itemKey = `item-${item.id}`;
+                if (!sessionStorage.getItem(itemKey)) {
+                    sessionStorage.setItem(itemKey, 'red');
+                }
+                if (item.childs) {
+                    initializeColors(item.childs);
+                }
+            });
+        }
+
+        function renderMenu(data, level, parentTop = 0) {
+            while (container.children.length > level) {
+                container.removeChild(container.lastChild);
+            }
+
+            const menu = document.createElement("div");
+            menu.className = "menu";
+
+            const columnWidth = getMaxTextWidth(data);
+            menu.style.width = `${columnWidth}px`;
+            menu.style.left = `${getMenuLeft(level)}px`;
+            menu.style.top = `${level > 0 ? parentTop : 0}px`;
+            menu.dataset.parentId = data[0]?.parent_id || '';
+
+            data.forEach(item => {
+                const entry = document.createElement("div");
+                entry.className = "menu-item";
+                entry.dataset.id = item.id;
+                entry.dataset.parentId = item.parent_id || '';
+
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = item.name;
+                nameSpan.style.flexGrow = "1";
+
+                const box = document.createElement("div");
+                box.className = "select-box";
+                box.dataset.id = item.id;
+
+                const itemKey = `item-${item.id}`;
+                if (sessionStorage.getItem(itemKey) === 'green') {
+                    box.classList.add("selected");
+                    selectedIds.add(item.id);
+                } else {
+                    sessionStorage.setItem(itemKey, 'red');
+                }
+
+                box.onclick = (e) => {
+                    e.stopPropagation();
+
+                    const wasSelected = box.classList.contains("selected");
+                    const isSelected = box.classList.toggle("selected");
+                    sessionStorage.setItem(itemKey, isSelected ? 'green' : 'red');
+
+                    const currentItem = findItemById(categories, item.id);
+
+                    if (isSelected) {
+                        resetChildrenState(currentItem);
+                        selectedIds.add(item.id);
+                    } else {
+                        selectedIds.delete(item.id);
+                    }
+
+                    updateParentStatesRecursively(currentItem);
+                };
+
+                entry.appendChild(nameSpan);
+                entry.appendChild(box);
+
+                entry.onmouseenter = () => {
+                    const offsetTop = getOffsetTop(entry);
+                    const requiredHeight = (item.childs?.length || 0) * itemHeight;
+                    const maxBottom = container.getBoundingClientRect().height;
+
+                    let adjustedTop = offsetTop;
+                    if (adjustedTop + requiredHeight > maxBottom) {
+                        adjustedTop = Math.max(0, maxBottom - requiredHeight);
+                    }
+
+                    if (item.childs) {
+                        const nextMenu = container.children[level + 1];
+                        if (!nextMenu || nextMenu.dataset.parentId !== item.id.toString()) {
+                            renderMenu(item.childs, level + 1, adjustedTop);
+                        }
+                    } else {
+                        while (container.children.length > level + 1) {
+                            container.removeChild(container.lastChild);
+                        }
+                    }
+                };
+
+                menu.appendChild(entry);
+            });
+
+            container.appendChild(menu);
+        }
+
+        function getOffsetTop(el) {
+            const rect = el.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            return rect.top - containerRect.top;
+        }
+
+        function getMaxTextWidth(items) {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            ctx.font = `${fontSize}px sans-serif`;
+
+            let max = 0;
+            items.forEach(item => {
+                const width = ctx.measureText(item.name).width;
+                if (width > max) max = width;
+            });
+
+            return Math.ceil(max + 60);
+        }
+
+        function getMenuLeft(level) {
+            let left = 0;
+            for (let i = 0; i < level; i++) {
+                const prevMenu = container.children[i];
+                if (prevMenu) {
+                    left += prevMenu.offsetWidth;
+                }
+            }
+            return left;
+        }
+
+        initializeColors(categories);
+        renderMenu(categories, 0);
+
+        container.onmouseleave = () => {
+            while (container.children.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+        };
+
+        document.getElementById("continue-button").addEventListener("click", () => {
+            const ids = Array.from(selectedIds);
+
+            fetch('/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                window.location.href = "/parametres";
+            })
+            .catch(error => {
+                console.error('Ошибка при отправке выбранных ID:', error);
+                window.location.href = "/parametres";
+            });
+        });
+    </script>
+</body>
+</html>
